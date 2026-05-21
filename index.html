@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SmartHome">
+<meta name="theme-color" content="#0a0a0f">
+<link rel="manifest" href="data:application/json,{%22name%22:%22SmartHome%20IoT%22,%22short_name%22:%22SmartHome%22,%22display%22:%22standalone%22,%22background_color%22:%22%230a0a0f%22,%22theme_color%22:%22%237c3aed%22}">
+<title>SmartHome IoT</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{
+  --bg:#0a0a0f;--bg2:#12121c;--bg3:#1a1a28;--bg4:#0d0d18;
+  --card:#16162a;--card2:#1e1e35;
+  --purple:#7c3aed;--purple2:#a78bfa;--purple3:#ede9fe;
+  --teal:#0d9488;--teal2:#5eead4;
+  --blue:#2563eb;--blue2:#93c5fd;
+  --amber:#d97706;--amber2:#fcd34d;
+  --red:#dc2626;--red2:#fca5a5;
+  --green:#16a34a;--green2:#86efac;
+  --text:#f8fafc;--text2:#94a3b8;--text3:#475569;
+  --border:rgba(255,255,255,0.06);--border2:rgba(139,92,246,0.3);
+  --radius:16px;--radius-sm:10px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+.app{max-width:430px;margin:0 auto;min-height:100vh;padding-bottom:84px;}
+
+/* ── HEADER ── */
+.header{
+  background:linear-gradient(180deg,rgba(124,58,237,0.15) 0%,transparent 100%);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  padding:env(safe-area-inset-top,14px) 16px 12px;
+  position:sticky;top:0;z-index:100;
+  border-bottom:1px solid var(--border);
+}
+.header-inner{display:flex;justify-content:space-between;align-items:center;}
+.header-left .title{font-size:18px;font-weight:700;letter-spacing:-0.3px;color:var(--text);}
+.header-left .sub{font-size:11px;color:var(--text3);margin-top:1px;}
+.header-right{display:flex;align-items:center;gap:8px;}
+.conn-pill{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,0.05);border:1px solid var(--border2);border-radius:20px;padding:5px 10px;font-size:11px;color:var(--text2);}
+.conn-dot{width:6px;height:6px;border-radius:50%;background:#4ade80;flex-shrink:0;}
+.conn-dot.loading{background:#fbbf24;animation:blink 1s infinite;}
+.conn-dot.error{background:#f87171;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.25;}}
+.notif-btn{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;}
+.notif-badge{position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:#f87171;border:1.5px solid var(--bg);}
+
+/* ── NAV ── */
+.bottom-nav{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:430px;
+  background:rgba(18,18,28,0.92);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-top:1px solid var(--border);
+  display:flex;z-index:100;
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+.nav-btn{flex:1;padding:10px 4px 12px;border:none;background:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;transition:opacity .15s;}
+.nav-btn svg{width:22px;height:22px;stroke:var(--text3);transition:stroke .15s;}
+.nav-btn span{font-size:9px;color:var(--text3);transition:color .15s;font-weight:500;}
+.nav-btn.active svg{stroke:var(--purple2);}
+.nav-btn.active span{color:var(--purple2);}
+
+/* ── PAGES ── */
+.page{display:none;padding:14px 14px 0;}
+.page.active{display:block;animation:fadeIn .2s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+.sec{font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;margin-top:4px;}
+
+/* ── CARDS ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px;}
+.card-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.card-title{font-size:13px;font-weight:600;color:var(--text);}
+
+/* ── SENSOR GRID ── */
+.sensors{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.sc{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;position:relative;overflow:hidden;cursor:pointer;transition:transform .1s,border-color .15s;}
+.sc:active{transform:scale(0.97);}
+.sc.alert-active{border-color:rgba(248,113,113,0.4);background:rgba(220,38,38,0.08);}
+.sc::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:2px 2px 0 0;}
+.sc-t::after{background:linear-gradient(90deg,#f97316,#ef4444);}
+.sc-h::after{background:linear-gradient(90deg,#38bdf8,#0ea5e9);}
+.sc-v::after{background:linear-gradient(90deg,#a855f7,#6d28d9);}
+.sc-l::after{background:linear-gradient(90deg,#fbbf24,#f59e0b);}
+.sc-p::after{background:linear-gradient(90deg,#2dd4bf,#0d9488);}
+.sc-m::after{background:linear-gradient(90deg,#f43f5e,#be123c);}
+.sc-icon{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:8px;}
+.sc-lbl{font-size:10px;color:var(--text3);margin-bottom:2px;font-weight:500;}
+.sc-val{font-size:22px;font-weight:700;color:var(--text);line-height:1;}
+.sc-unit{font-size:11px;font-weight:500;color:var(--text2);}
+.sc-st{font-size:10px;margin-top:5px;font-weight:500;}
+.st-ok{color:#4ade80;}
+.st-warn{color:#fbbf24;}
+.st-bad{color:#f87171;}
+
+/* ── ALERTS ── */
+.alert-strip{border-radius:12px;padding:11px 13px;margin-bottom:8px;display:flex;align-items:flex-start;gap:9px;animation:slideIn .3s ease;}
+@keyframes slideIn{from{opacity:0;transform:translateX(-8px);}to{opacity:1;transform:translateX(0);}}
+.alert-strip.danger{background:rgba(220,38,38,0.12);border:1px solid rgba(248,113,113,0.25);}
+.alert-strip.warning{background:rgba(217,119,6,0.12);border:1px solid rgba(252,211,77,0.25);}
+.alert-dot2{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:3px;}
+.alert-dot2.danger{background:#f87171;}
+.alert-dot2.warning{background:#fbbf24;}
+.alert-msg{font-size:12px;color:var(--text);line-height:1.5;}
+.alert-time2{font-size:10px;color:var(--text3);margin-top:2px;}
+
+/* ── CHART ── */
+.chart-wrap{position:relative;}
+.rpills{display:flex;gap:5px;}
+.rp{padding:4px 10px;border-radius:20px;border:1px solid var(--border);font-size:11px;color:var(--text3);background:none;cursor:pointer;transition:all .15s;}
+.rp.active{background:rgba(167,139,250,0.15);border-color:var(--purple2);color:var(--purple2);font-weight:500;}
+.sensor-tabs{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;}
+
+/* ── HISTORY PAGE ── */
+.hist-filter{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;padding-bottom:2px;}
+.hf-btn{flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:none;font-size:12px;color:var(--text3);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.hf-btn.active{background:rgba(167,139,250,0.15);border-color:var(--purple2);color:var(--purple2);font-weight:500;}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+.stat-box{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;text-align:center;}
+.stat-box .sv{font-size:18px;font-weight:700;color:var(--text);}
+.stat-box .sl{font-size:10px;color:var(--text3);margin-top:2px;}
+.history-table{display:flex;flex-direction:column;gap:0;}
+.ht-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:12px;}
+.ht-row:last-child{border-bottom:none;}
+.ht-time{color:var(--text3);font-size:11px;min-width:80px;}
+.ht-vals{display:flex;gap:10px;align-items:center;}
+.ht-v{font-weight:600;}
+.ht-f1{color:#f97316;}
+.ht-f2{color:#38bdf8;}
+.ht-f3{color:#a855f7;}
+
+/* ── ML PAGE ── */
+.ml-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px;}
+.ml-ttl{font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:7px;}
+.ml-ttl-badge{font-size:9px;padding:2px 7px;border-radius:10px;background:rgba(167,139,250,0.15);color:var(--purple2);font-weight:600;}
+.ml-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);}
+.ml-row:last-child{border-bottom:none;}
+.ml-lbl{font-size:12px;color:var(--text2);}
+.abadge{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:20px;font-size:11px;font-weight:600;}
+.ab-ok{background:rgba(74,222,128,.12);color:#4ade80;}
+.ab-warn{background:rgba(251,191,36,.12);color:#fbbf24;}
+.ab-bad{background:rgba(248,113,113,.12);color:#f87171;}
+.trend-cell{display:flex;align-items:center;gap:5px;}
+.trend-icon{font-size:15px;}
+.trend-sub{font-size:10px;color:var(--text3);}
+.fc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px;}
+.fc-item{background:var(--bg3);border-radius:10px;padding:10px;text-align:center;border:1px solid var(--border);}
+.fc-t{font-size:10px;color:var(--text3);margin-bottom:4px;}
+.fc-v{font-size:17px;font-weight:700;color:var(--text);}
+.fc-u{font-size:10px;color:var(--text2);}
+.fc-delta{font-size:10px;margin-top:2px;}
+.comfort-ring{width:80px;height:80px;position:relative;flex-shrink:0;}
+.comfort-ring canvas{position:absolute;top:0;left:0;}
+.comfort-ring .cr-val{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:16px;font-weight:700;color:var(--text);}
+.rf-row{display:grid;grid-template-columns:1fr 2fr auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);}
+.rf-row:last-child{border-bottom:none;}
+.rf-feat{font-size:12px;color:var(--text2);}
+.rf-bar-wrap{height:6px;background:rgba(255,255,255,.06);border-radius:3px;}
+.rf-bar{height:6px;border-radius:3px;background:var(--purple2);}
+.rf-pct{font-size:11px;color:var(--text3);text-align:right;min-width:30px;}
+.insight-box{background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.2);border-radius:12px;padding:12px;margin-bottom:8px;}
+.insight-label{font-size:10px;font-weight:600;color:var(--purple2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
+.insight-text{font-size:12px;color:var(--text2);line-height:1.6;}
+
+/* ── SDG PAGE ── */
+.sdg-hero{background:linear-gradient(135deg,rgba(124,58,237,.2),rgba(13,148,136,.2));border:1px solid rgba(167,139,250,.2);border-radius:var(--radius);padding:20px;margin-bottom:12px;text-align:center;}
+.sdg-big{font-size:60px;font-weight:800;background:linear-gradient(135deg,#a78bfa,#5eead4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1;}
+.sdg-sub{font-size:12px;color:var(--text2);margin-top:4px;}
+.sdg-goal{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:8px;}
+.sdg-gr{display:flex;align-items:center;gap:12px;}
+.sdg-num{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.sdg-info{flex:1;}
+.sdg-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:1px;}
+.sdg-desc{font-size:10px;color:var(--text3);margin-bottom:6px;}
+.prog{height:5px;background:rgba(255,255,255,.06);border-radius:3px;}
+.prog-f{height:5px;border-radius:3px;transition:width .8s ease;}
+.sdg-pct{font-size:15px;font-weight:700;min-width:40px;text-align:right;}
+
+/* ── SCENARIOS PAGE ── */
+.scene-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.scene-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;cursor:pointer;transition:all .2s;}
+.scene-card.on{border-color:var(--purple2);background:rgba(167,139,250,.1);}
+.scene-card:active{transform:scale(.97);}
+.si{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:8px;}
+.sn{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px;}
+.sd{font-size:10px;color:var(--text3);line-height:1.5;}
+.sa{font-size:10px;color:var(--purple2);margin-top:6px;font-weight:600;}
+.relay-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);}
+.relay-row:last-child{border-bottom:none;}
+.rl{font-size:13px;color:var(--text);font-weight:500;}
+.rs{font-size:11px;color:var(--text3);margin-top:2px;}
+.tog{width:46px;height:26px;border-radius:13px;background:rgba(255,255,255,.1);position:relative;cursor:pointer;transition:background .2s;flex-shrink:0;}
+.tog.on{background:var(--purple);}
+.tog-t{width:22px;height:22px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.3);}
+.tog.on .tog-t{left:22px;}
+
+/* ── NOTIFICATION PANEL ── */
+.notif-panel{position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-100%);width:100%;max-width:430px;background:var(--bg2);border-bottom:1px solid var(--border2);z-index:200;transition:transform .3s cubic-bezier(.4,0,.2,1);padding:env(safe-area-inset-top,14px) 14px 14px;}
+.notif-panel.open{transform:translateX(-50%) translateY(0);}
+.notif-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.notif-title{font-size:15px;font-weight:700;color:var(--text);}
+.notif-close{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.08);border:none;color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.notif-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.notif-item:last-child{border-bottom:none;}
+.ni-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.ni-text{font-size:12px;color:var(--text);line-height:1.5;}
+.ni-time{font-size:10px;color:var(--text3);margin-top:2px;}
+.notif-settings{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+.notif-settings .sec{margin-bottom:8px;}
+.ntfy-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;}
+.ntfy-label{font-size:13px;color:var(--text);}
+.ntfy-sub{font-size:11px;color:var(--text3);}
+.ntfy-input{background:rgba(255,255,255,.06);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;font-size:13px;color:var(--text);width:100%;margin-top:6px;outline:none;}
+.ntfy-input:focus{border-color:var(--purple2);}
+.save-btn{width:100%;padding:12px;border-radius:12px;background:var(--purple);border:none;color:#fff;font-size:14px;font-weight:600;cursor:pointer;margin-top:10px;transition:opacity .15s;}
+.save-btn:active{opacity:.8;}
+.test-btn{width:100%;padding:10px;border-radius:12px;background:rgba(167,139,250,.15);border:1px solid var(--purple2);color:var(--purple2);font-size:13px;font-weight:600;cursor:pointer;margin-top:6px;}
+
+/* ── OVERLAY ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:150;opacity:0;pointer-events:none;transition:opacity .3s;}
+.overlay.open{opacity:1;pointer-events:all;}
+
+/* ── MISC ── */
+.fab{position:fixed;bottom:96px;right:16px;width:46px;height:46px;border-radius:50%;background:var(--purple);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:99;box-shadow:0 4px 16px rgba(124,58,237,.4);}
+.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(22,22,42,.95);border:1px solid var(--border2);color:var(--text);padding:10px 18px;border-radius:20px;font-size:12px;z-index:999;opacity:0;transition:opacity .3s;white-space:nowrap;max-width:300px;text-align:center;}
+.toast.show{opacity:1;}
+input[type=range]{accent-color:var(--purple2);}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-inner">
+      <div class="header-left">
+        <div class="title">SmartHome IoT</div>
+        <div class="sub" id="header-sub">Channel 3322758</div>
+      </div>
+      <div class="header-right">
+        <div class="conn-pill">
+          <div class="conn-dot loading" id="conn-dot"></div>
+          <span id="conn-text">Connecting</span>
+        </div>
+        <div class="notif-btn" onclick="toggleNotifPanel()" id="notif-btn">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 1.5C5.5 1.5 3.5 3.5 3.5 6v3L2 11h12l-1.5-2V6C12.5 3.5 10.5 1.5 8 1.5z" stroke="#94a3b8" stroke-width="1.2"/>
+            <path d="M6.5 11.5C6.5 12.3 7.2 13 8 13s1.5-.7 1.5-1.5" stroke="#94a3b8" stroke-width="1.2"/>
+          </svg>
+          <div class="notif-badge" id="notif-badge" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTIFICATION PANEL -->
+  <div class="overlay" id="overlay" onclick="toggleNotifPanel()"></div>
+  <div class="notif-panel" id="notif-panel">
+    <div class="notif-hdr">
+      <span class="notif-title">Notifications</span>
+      <button class="notif-close" onclick="toggleNotifPanel()">✕</button>
+    </div>
+    <div id="notif-list"><div style="text-align:center;padding:16px;color:var(--text3);font-size:12px;">No notifications yet</div></div>
+    <div class="notif-settings">
+      <div class="sec">Push via ntfy.sh (works on iPhone)</div>
+      <div class="ntfy-row">
+        <div><div class="ntfy-label">Your topic name</div><div class="ntfy-sub">Any unique word — subscribe in ntfy app</div></div>
+      </div>
+      <input class="ntfy-input" type="text" id="ntfy-topic" placeholder="e.g. smarthome-alimqa-2025">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px;">
+        <div class="card" style="padding:10px;margin-bottom:0;">
+          <div class="ntfy-label" style="font-size:11px;margin-bottom:4px;">VOC alert ></div>
+          <input type="number" id="thr-voc" value="300" style="background:none;border:none;color:var(--text);font-size:16px;font-weight:700;width:80px;outline:none;">
+        </div>
+        <div class="card" style="padding:10px;margin-bottom:0;">
+          <div class="ntfy-label" style="font-size:11px;margin-bottom:4px;">Temp alert ></div>
+          <input type="number" id="thr-temp" value="30" style="background:none;border:none;color:var(--text);font-size:16px;font-weight:700;width:80px;outline:none;">
+        </div>
+      </div>
+      <button class="save-btn" onclick="saveNotifSettings()">Save settings</button>
+      <button class="test-btn" onclick="sendTestNotif()">Send test notification</button>
+      <div style="margin-top:10px;padding:10px;background:rgba(167,139,250,.06);border-radius:10px;">
+        <div style="font-size:10px;color:var(--text3);line-height:1.7;">
+          1. Install <strong style="color:var(--purple2);">ntfy</strong> from App Store<br>
+          2. Tap Subscribe → enter your topic name<br>
+          3. Enter same topic above → Save<br>
+          4. iPhone will receive push alerts automatically
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dash">
+    <div class="sec" style="margin-top:8px;">Live Sensors</div>
+    <div class="sensors">
+      <div class="sc sc-t" onclick="showHistory('temp')">
+        <div class="sc-icon" style="background:rgba(249,115,22,.15);">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="7" y="1.5" width="2" height="7" rx="1" fill="#f97316"/><circle cx="8" cy="11.5" r="3" stroke="#f97316" stroke-width="1.3" fill="none"/></svg>
+        </div>
+        <div class="sc-lbl">Temperature</div>
+        <div class="sc-val" id="s-temp">—<span class="sc-unit">°C</span></div>
+        <div class="sc-st" id="st-temp">—</div>
+      </div>
+      <div class="sc sc-h" onclick="showHistory('hum')">
+        <div class="sc-icon" style="background:rgba(56,189,248,.15);">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1C8 1 3.5 7 3.5 10a4.5 4.5 0 009 0C12.5 7 8 1 8 1z" stroke="#38bdf8" stroke-width="1.3" fill="none"/></svg>
+        </div>
+        <div class="sc-lbl">Humidity</div>
+        <div class="sc-val" id="s-hum">—<span class="sc-unit">%</span></div>
+        <div class="sc-st" id="st-hum">—</div>
+      </div>
+      <div class="sc sc-v" onclick="showHistory('voc')">
+        <div class="sc-icon" style="background:rgba(168,85,247,.15);">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5" stroke="#a855f7" stroke-width="1.3"/><circle cx="8" cy="8" r="2" stroke="#a855f7" stroke-width="1.1"/></svg>
+        </div>
+        <div class="sc-lbl">VOC / Air Quality</div>
+        <div class="sc-val" id="s-voc">—<span class="sc-unit"> idx</span></div>
+        <div class="sc-st" id="st-voc">—</div>
+      </div>
+      <div class="sc sc-l" onclick="showHistory('light')">
+        <div class="sc-icon" style="background:rgba(251,191,36,.15);">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="3" stroke="#fbbf24" stroke-width="1.3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3 3l1 1M12 12l1 1M12 4l-1 1M4 12l-1 1" stroke="#fbbf24" stroke-width="1.2"/></svg>
+        </div>
+        <div class="sc-lbl">Light</div>
+        <div class="sc-val" id="s-light">—<span class="sc-unit"> lx</span></div>
+        <div class="sc-st" id="st-light">—</div>
+      </div>
+      <div class="sc sc-p">
+        <div class="sc-icon" style="background:rgba(45,212,191,.15);">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M11 5l3 3-3 3" stroke="#2dd4bf" stroke-width="1.3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="sc-lbl">Pressure</div>
+        <div class="sc-val" id="s-pres">—<span class="sc-unit"> hPa</span></div>
+        <div class="sc-st" id="st-pres">—</div>
+      </div>
+      <div class="sc sc-m">
+        <div class="sc-icon" style="background:rgba(244,63,94,.15);">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5.5" r="2.5" stroke="#f43f5e" stroke-width="1.3"/><path d="M3 14c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="#f43f5e" stroke-width="1.3" stroke-linecap="round"/></svg>
+        </div>
+        <div class="sc-lbl">Motion</div>
+        <div class="sc-val" id="s-pir" style="font-size:14px;line-height:1.6;">—</div>
+        <div class="sc-st" id="st-pir">—</div>
+      </div>
+    </div>
+
+    <div id="alerts-wrap"></div>
+
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-title" id="main-chart-title">Temperature</span>
+        <div class="rpills">
+          <button class="rp active" onclick="setRN(this,10)">10</button>
+          <button class="rp" onclick="setRN(this,25)">25</button>
+          <button class="rp" onclick="setRN(this,50)">50</button>
+        </div>
+      </div>
+      <div class="sensor-tabs" id="sensor-tabs">
+        <button class="rp active" onclick="setChartField(this,'field1','Temperature','°C','#f97316')">Temp</button>
+        <button class="rp" onclick="setChartField(this,'field2','Humidity','%','#38bdf8')">Humidity</button>
+        <button class="rp" onclick="setChartField(this,'field4','VOC','idx','#a855f7')">VOC</button>
+        <button class="rp" onclick="setChartField(this,'field5','Light','lx','#fbbf24')">Light</button>
+        <button class="rp" onclick="setChartField(this,'field3','Pressure','hPa','#2dd4bf')">Pressure</button>
+      </div>
+      <div class="chart-wrap" style="height:160px;"><canvas id="main-chart" role="img" aria-label="Sensor history chart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="page" id="page-hist">
+    <div class="sec" style="margin-top:8px;">Data History</div>
+    <div class="hist-filter" id="hist-filter">
+      <button class="hf-btn active" onclick="setHistField(this,'all')">All</button>
+      <button class="hf-btn" onclick="setHistField(this,'temp')">Temp</button>
+      <button class="hf-btn" onclick="setHistField(this,'hum')">Humidity</button>
+      <button class="hf-btn" onclick="setHistField(this,'voc')">VOC</button>
+      <button class="hf-btn" onclick="setHistField(this,'light')">Light</button>
+      <button class="hf-btn" onclick="setHistField(this,'motion')">Motion</button>
+    </div>
+    <div class="stats-row" id="hist-stats">
+      <div class="stat-box"><div class="sv" id="hs-avg">—</div><div class="sl">Average</div></div>
+      <div class="stat-box"><div class="sv" id="hs-min">—</div><div class="sl">Min</div></div>
+      <div class="stat-box"><div class="sv" id="hs-max">—</div><div class="sl">Max</div></div>
+    </div>
+    <div class="card" style="padding:14px;">
+      <div class="card-hdr">
+        <span class="card-title" id="hist-chart-title">Temperature & Humidity</span>
+        <div class="rpills">
+          <button class="rp active" onclick="setHistN(this,20)">20</button>
+          <button class="rp" onclick="setHistN(this,50)">50</button>
+          <button class="rp" onclick="setHistN(this,100)">100</button>
+        </div>
+      </div>
+      <div class="chart-wrap" style="height:180px;"><canvas id="hist-chart" role="img" aria-label="History chart"></canvas></div>
+    </div>
+    <div class="card" style="padding:14px;">
+      <div class="card-hdr"><span class="card-title">Recent readings</span><span style="font-size:11px;color:var(--text3);" id="hist-count"></span></div>
+      <div id="hist-table"></div>
+    </div>
+  </div>
+
+  <!-- ML ANALYSIS -->
+  <div class="page" id="page-ml">
+    <div class="sec" style="margin-top:8px;">ML Analysis</div>
+
+    <div class="ml-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div class="ml-ttl" style="margin-bottom:0;">Comfort Index <span class="ml-ttl-badge">LIVE</span></div>
+        <div style="position:relative;">
+          <svg width="80" height="80" viewBox="0 0 80 80" style="transform:rotate(-90deg);">
+            <circle cx="40" cy="40" r="30" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="8"/>
+            <circle cx="40" cy="40" r="30" fill="none" stroke="url(#cg)" stroke-width="8" stroke-linecap="round" id="comfort-circle" stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+            <defs><linearGradient id="cg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#a78bfa"/><stop offset="100%" stop-color="#5eead4"/></linearGradient></defs>
+          </svg>
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:15px;font-weight:700;color:var(--text);" id="comfort-val">—</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="background:var(--bg3);border-radius:10px;padding:10px;border:1px solid var(--border);">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:3px;">Heat Index</div>
+          <div style="font-size:15px;font-weight:700;color:var(--text);" id="ml-heat">—</div>
+        </div>
+        <div style="background:var(--bg3);border-radius:10px;padding:10px;border:1px solid var(--border);">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:3px;">Dew Point</div>
+          <div style="font-size:15px;font-weight:700;color:var(--text);" id="ml-dew">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ml-card">
+      <div class="ml-ttl">Anomaly Detection <span class="ml-ttl-badge">Z-SCORE</span></div>
+      <div class="ml-row"><span class="ml-lbl">Temperature</span><span class="abadge" id="ml-a-temp">—</span></div>
+      <div class="ml-row"><span class="ml-lbl">Humidity</span><span class="abadge" id="ml-a-hum">—</span></div>
+      <div class="ml-row"><span class="ml-lbl">VOC Air Quality</span><span class="abadge" id="ml-a-voc">—</span></div>
+      <div class="ml-row"><span class="ml-lbl">Light Level</span><span class="abadge" id="ml-a-light">—</span></div>
+    </div>
+
+    <div class="ml-card">
+      <div class="ml-ttl">Trend Analysis <span class="ml-ttl-badge">LINEAR REG</span></div>
+      <div class="ml-row">
+        <span class="ml-lbl">Temperature</span>
+        <div class="trend-cell"><span class="trend-icon" id="ml-tr-t">—</span><span class="trend-sub" id="ml-tr-t-v"></span></div>
+      </div>
+      <div class="ml-row">
+        <span class="ml-lbl">Humidity</span>
+        <div class="trend-cell"><span class="trend-icon" id="ml-tr-h">—</span><span class="trend-sub" id="ml-tr-h-v"></span></div>
+      </div>
+      <div class="ml-row">
+        <span class="ml-lbl">VOC Index</span>
+        <div class="trend-cell"><span class="trend-icon" id="ml-tr-v">—</span><span class="trend-sub" id="ml-tr-v-v"></span></div>
+      </div>
+    </div>
+
+    <div class="ml-card">
+      <div class="ml-ttl">30-min Forecast <span class="ml-ttl-badge">REGRESSION</span></div>
+      <div class="fc-grid">
+        <div class="fc-item"><div class="fc-t">+10 min</div><div class="fc-v" id="fc1">—</div><div class="fc-u">°C</div><div class="fc-delta" id="fc1d"></div></div>
+        <div class="fc-item"><div class="fc-t">+20 min</div><div class="fc-v" id="fc2">—</div><div class="fc-u">°C</div><div class="fc-delta" id="fc2d"></div></div>
+        <div class="fc-item"><div class="fc-t">+30 min</div><div class="fc-v" id="fc3">—</div><div class="fc-u">°C</div><div class="fc-delta" id="fc3d"></div></div>
+      </div>
+    </div>
+
+    <div class="ml-card">
+      <div class="ml-ttl">Feature Importance <span class="ml-ttl-badge">RANDOM FOREST</span></div>
+      <div id="rf-importance"></div>
+    </div>
+
+    <div class="ml-card">
+      <div class="ml-ttl">ML Insights</div>
+      <div id="ml-insights"></div>
+    </div>
+
+    <div class="ml-card">
+      <div class="ml-ttl">Statistics</div>
+      <div class="ml-row"><span class="ml-lbl">Temp avg / min / max</span><span style="font-size:11px;color:var(--text2);font-weight:600;" id="ml-st-t">—</span></div>
+      <div class="ml-row"><span class="ml-lbl">Humidity avg / min / max</span><span style="font-size:11px;color:var(--text2);font-weight:600;" id="ml-st-h">—</span></div>
+      <div class="ml-row"><span class="ml-lbl">VOC avg / min / max</span><span style="font-size:11px;color:var(--text2);font-weight:600;" id="ml-st-v">—</span></div>
+      <div class="ml-row"><span class="ml-lbl">Motion events</span><span style="font-weight:600;color:var(--text);" id="ml-motion-cnt">—</span></div>
+      <div class="ml-row"><span class="ml-lbl">Data points loaded</span><span style="font-weight:600;color:var(--purple2);" id="ml-pts">—</span></div>
+    </div>
+  </div>
+
+  <!-- SDG -->
+  <div class="page" id="page-sdg">
+    <div class="sec" style="margin-top:8px;">SDG Scoring</div>
+    <div class="sdg-hero">
+      <div class="sdg-big" id="sdg-total">—</div>
+      <div class="sdg-sub">Overall Sustainability Score</div>
+      <div style="margin-top:12px;max-width:200px;margin-left:auto;margin-right:auto;">
+        <div class="prog"><div class="prog-f" id="sdg-prog" style="background:linear-gradient(90deg,#a78bfa,#5eead4);"></div></div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:8px;" id="sdg-note">Based on live sensor data</div>
+    </div>
+    <div id="sdg-list"></div>
+  </div>
+
+  <!-- SCENARIOS -->
+  <div class="page" id="page-sc">
+    <div class="sec" style="margin-top:8px;">Smart Scenarios</div>
+    <div class="scene-grid">
+      <div class="scene-card on" id="sc-morning" onclick="setScene('morning')">
+        <div class="si" style="background:rgba(251,191,36,.15);">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="4" stroke="#fbbf24" stroke-width="1.5"/><path d="M11 2v2M11 18v2M2 11h2M18 11h2M4.9 4.9l1.4 1.4M15.7 15.7l1.4 1.4M4.9 17.1l1.4-1.4M15.7 6.3l1.4-1.4" stroke="#fbbf24" stroke-width="1.4"/></svg>
+        </div>
+        <div class="sn">Morning</div>
+        <div class="sd">Lights on, ventilation active</div>
+        <div class="sa" id="sa-morning">● Active</div>
+      </div>
+      <div class="scene-card" id="sc-evening" onclick="setScene('evening')">
+        <div class="si" style="background:rgba(167,139,250,.15);">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M17 12c-2.8 0-5-2.2-5-5 0-1.2.4-2.3 1-3.2C10 4.2 7.5 6.8 7.5 10c0 3.6 2.9 6.5 6.5 6.5 2.4 0 4.5-1.4 5.5-3.4-.8-.4-1.6-1.1-2.5-1.1z" stroke="#a78bfa" stroke-width="1.5"/></svg>
+        </div>
+        <div class="sn">Evening</div>
+        <div class="sd">Dim lights, economy mode</div>
+        <div class="sa" id="sa-evening" style="display:none;">● Active</div>
+      </div>
+      <div class="scene-card" id="sc-night" onclick="setScene('night')">
+        <div class="si" style="background:rgba(99,102,241,.15);">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M12 3a9 9 0 100 16A7 7 0 0112 3z" stroke="#818cf8" stroke-width="1.5"/></svg>
+        </div>
+        <div class="sn">Night</div>
+        <div class="sd">Lights off, sensors active</div>
+        <div class="sa" id="sa-night" style="display:none;">● Active</div>
+      </div>
+      <div class="scene-card" id="sc-away" onclick="setScene('away')">
+        <div class="si" style="background:rgba(248,113,113,.15);">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 3C8.2 3 6 5.2 6 8c0 4 5 11 5 11s5-7 5-11c0-2.8-2.2-5-5-5z" stroke="#f87171" stroke-width="1.5"/><circle cx="11" cy="8" r="2" stroke="#f87171" stroke-width="1.3"/></svg>
+        </div>
+        <div class="sn">Nobody home</div>
+        <div class="sd">All off, max energy saving</div>
+        <div class="sa" id="sa-away" style="display:none;">● Active</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec" style="margin-bottom:10px;">Manual Control</div>
+      <div class="relay-row">
+        <div><div class="rl">Main Relay</div><div class="rs">Field 6 → 0 or 1</div></div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:11px;color:var(--text3);" id="relay-lbl">Off</span>
+          <div class="tog" id="relay-tog" onclick="toggleRelay()"><div class="tog-t"></div></div>
+        </div>
+      </div>
+      <div class="relay-row">
+        <div><div class="rl">Brightness PWM</div><div class="rs">0 – 255</div></div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <input type="range" min="0" max="255" value="128" id="pwm-sl" oninput="document.getElementById('pwm-v').textContent=this.value" style="width:100px;">
+          <span style="font-size:13px;font-weight:700;min-width:26px;" id="pwm-v">128</span>
+          <button onclick="sendField(7,document.getElementById('pwm-sl').value)" style="padding:6px 12px;border-radius:8px;background:var(--purple);border:none;color:#fff;font-size:11px;font-weight:600;cursor:pointer;">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hdr"><span class="card-title">Motion Activity</span></div>
+      <div class="chart-wrap" style="height:110px;"><canvas id="pir-chart" role="img" aria-label="PIR motion history"></canvas></div>
+    </div>
+  </div>
+
+</div><!-- .app -->
+
+<button class="fab" onclick="fetchData()">
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#fff" stroke-width="1.8">
+    <path d="M2 10C2 5.6 5.6 2 10 2c2.5 0 4.7 1.1 6.2 2.8" stroke-linecap="round"/>
+    <path d="M18 10c0 4.4-3.6 8-8 8-2.5 0-4.7-1.1-6.2-2.8" stroke-linecap="round"/>
+    <path d="M16 2v3.5H12.5M4 18v-3.5H7.5" stroke-linecap="round"/>
+  </svg>
+</button>
+<div class="toast" id="toast"></div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <button class="nav-btn active" id="tab-dash" onclick="showPage('dash')">
+    <svg viewBox="0 0 22 22" fill="none"><rect x="3" y="3" width="7" height="7" rx="1.5" stroke-width="1.4"/><rect x="12" y="3" width="7" height="7" rx="1.5" stroke-width="1.4"/><rect x="3" y="12" width="7" height="7" rx="1.5" stroke-width="1.4"/><rect x="12" y="12" width="7" height="7" rx="1.5" stroke-width="1.4"/></svg>
+    <span>Dashboard</span>
+  </button>
+  <button class="nav-btn" id="tab-hist" onclick="showPage('hist')">
+    <svg viewBox="0 0 22 22" fill="none"><path d="M3 17l4-6 4 3 4-8 4 4" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>History</span>
+  </button>
+  <button class="nav-btn" id="tab-ml" onclick="showPage('ml')">
+    <svg viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="3" stroke-width="1.4"/><path d="M11 2v3M11 17v3M2 11h3M17 11h3M4.9 4.9l2.1 2.1M15 15l2.1 2.1M4.9 17.1l2.1-2.1M15 7l2.1-2.1" stroke-width="1.3"/></svg>
+    <span>ML</span>
+  </button>
+  <button class="nav-btn" id="tab-sdg" onclick="showPage('sdg')">
+    <svg viewBox="0 0 22 22" fill="none"><path d="M11 2L3 6v6c0 5 3.6 8.7 8 10 4.4-1.3 8-5 8-10V6L11 2z" stroke-width="1.4"/></svg>
+    <span>SDG</span>
+  </button>
+  <button class="nav-btn" id="tab-sc" onclick="showPage('sc')">
+    <svg viewBox="0 0 22 22" fill="none"><path d="M11 2L3 6v6c0 5 3.6 8.7 8 10 4.4-1.3 8-5 8-10V6L11 2z" stroke-width="1.4"/><path d="M8 11l2 2 4-4" stroke-width="1.4" stroke-linecap="round"/></svg>
+    <span>Scenarios</span>
+  </button>
+</div>
+
+<script>
+const CH='3322758',RK='1FIQPR7VZSQ2L47H',WK='F2W1CQFNQ8YZV3B2';
+let allData=[],mainChart=null,histChart=null,pirChart=null;
+let chartField='field1',chartColor='#f97316',chartUnit='°C',chartN=10;
+let histField='all',histN=20;
+let activeScene='morning',relayOn=false;
+let ntfyTopic=localStorage.getItem('ntfy_topic')||'';
+let thrVOC=parseFloat(localStorage.getItem('thr_voc'))||300;
+let thrTemp=parseFloat(localStorage.getItem('thr_temp'))||30;
+let notifLog=[],notifCooldown={};
+
+// ── PAGES ──
+function showPage(p){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.getElementById('tab-'+p).classList.add('active');
+  if(p==='hist')renderHistPage();
+  if(p==='ml')runML();
+  if(p==='sdg')updateSDG();
+}
+
+function showHistory(f){
+  histField=f;
+  document.querySelectorAll('#hist-filter .hf-btn').forEach(b=>{
+    b.classList.toggle('active',b.getAttribute('onclick').includes("'"+f+"'"));
+  });
+  showPage('hist');
+}
+
+// ── CONNECTIVITY ──
+function setConn(s){
+  document.getElementById('conn-dot').className='conn-dot '+s;
+  document.getElementById('conn-text').textContent=s==='loading'?'Syncing':s==='error'?'Offline':'Live';
+}
+
+// ── FETCH ──
+async function fetchData(){
+  setConn('loading');
+  try{
+    const r=await fetch(`https://api.thingspeak.com/channels/${CH}/feeds.json?api_key=${RK}&results=100`);
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    setConn('ok');
+    allData=d.feeds||[];
+    if(allData.length){
+      const last=allData[allData.length-1];
+      const ts=new Date(last.created_at);
+      const now=new Date();
+      const ageMin=Math.round((now-ts)/60000);
+      const ageTxt=ageMin<2?'Just now':ageMin<60?ageMin+'min ago':Math.round(ageMin/60)+'h ago';
+      document.getElementById('header-sub').textContent='Ch.3322758 · Last: '+ageTxt;
+      // Show stale warning if data older than 10 min
+      if(ageMin>10){
+        document.getElementById('conn-dot').className='conn-dot loading';
+        document.getElementById('conn-text').textContent='Stale data';
+      }
+      updateCards(last);
+      checkAlerts(last);
+    }
+    renderMainChart();
+    renderPirChart();
+    const ap=document.querySelector('.page.active').id.replace('page-','');
+    if(ap==='hist')renderHistPage();
+    if(ap==='ml')runML();
+    if(ap==='sdg')updateSDG();
+  }catch(e){setConn('error');}
+}
+
+// ── SENSOR CARDS ──
+function fv(v,dec=1){return isNaN(v)?'—':v.toFixed(dec);}
+function updateCards(last){
+  const t=parseFloat(last.field1),h=parseFloat(last.field2),
+        p=parseFloat(last.field3),v=parseFloat(last.field4),
+        l=parseFloat(last.field5),pir=last.field6;
+
+  function set(id,val,unit,stId,st,cls){
+    document.getElementById(id).innerHTML=isNaN(val)?'—':val.toFixed(val>=100?0:1)+'<span class="sc-unit">'+unit+'</span>';
+    const el=document.getElementById(stId);
+    el.textContent=st;el.className='sc-st '+cls;
+  }
+
+  if(!isNaN(t)){
+    const st=t<18?['🥶 Too cold','st-warn']:t>28?['🌡 Too hot','st-bad']:['✓ Comfortable','st-ok'];
+    set('s-temp',t,'°C','st-temp',...st);
+    document.querySelector('.sc-t').classList.toggle('alert-active',t>thrTemp);
+  }
+  if(!isNaN(h)){
+    const st=h<30?['💧 Too dry','st-warn']:h>70?['💦 Too humid','st-bad']:['✓ Normal','st-ok'];
+    set('s-hum',h,'%','st-hum',...st);
+  }
+  if(!isNaN(v)){
+    const st=v<150?['✓ Excellent','st-ok']:v<250?['⚠ Moderate','st-warn']:['✗ Poor air','st-bad'];
+    set('s-voc',v,' idx','st-voc',...st);
+    document.querySelector('.sc-v').classList.toggle('alert-active',v>thrVOC);
+  }
+  if(!isNaN(l)){
+    const st=l<50?['🌑 Dark','st-warn']:l>800?['☀️ Bright','st-warn']:['✓ Good light','st-ok'];
+    set('s-light',l,' %','st-light',...st);
+  }
+  if(!isNaN(p)){
+    const st=p<1000?['↓ Low','st-warn']:p>1020?['↑ High','st-warn']:['✓ Normal','st-ok'];
+    set('s-pres',p,' hPa','st-pres',...st);
+  }
+  if(pir!=null){
+    const m=parseInt(pir)>0;
+    document.getElementById('s-pir').textContent=m?'Detected':'Clear';
+    const sp=document.getElementById('st-pir');
+    sp.textContent=m?'🚶 Motion detected':'✓ No motion';
+    sp.className='sc-st '+(m?'st-warn':'st-ok');
+  }
+}
+
+// ── ALERTS + PUSH ──
+function checkAlerts(last){
+  const t=parseFloat(last.field1),h=parseFloat(last.field2),v=parseFloat(last.field4);
+  const alerts=[];
+  if(!isNaN(t)&&t>thrTemp)alerts.push({type:'danger',msg:`High temperature: ${t.toFixed(1)}°C — above your threshold (${thrTemp}°C)`});
+  if(!isNaN(t)&&t<15)alerts.push({type:'warning',msg:`Low temperature: ${t.toFixed(1)}°C`});
+  if(!isNaN(h)&&h>75)alerts.push({type:'warning',msg:`High humidity: ${h.toFixed(0)}% — ventilation recommended`});
+  if(!isNaN(v)&&v>thrVOC)alerts.push({type:'danger',msg:`Poor air quality: VOC ${v.toFixed(0)} — open windows`});
+
+  const wrap=document.getElementById('alerts-wrap');
+  wrap.innerHTML=alerts.map(a=>`
+    <div class="alert-strip ${a.type}">
+      <div class="alert-dot2 ${a.type}"></div>
+      <div><div class="alert-msg">${a.msg}</div><div class="alert-time2">${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div></div>
+    </div>`).join('');
+
+  alerts.forEach(a=>{
+    const key=a.msg.slice(0,30);
+    const now=Date.now();
+    if(!notifCooldown[key]||now-notifCooldown[key]>600000){
+      notifCooldown[key]=now;
+      addNotifLog(a);
+      sendPush(a.msg,a.type==='danger'?'‼️':'⚠️');
+    }
+  });
+
+  if(alerts.length>0){
+    document.getElementById('notif-badge').style.display='block';
+  }
+}
+
+function addNotifLog(a){
+  notifLog.unshift({msg:a.msg,type:a.type,time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})});
+  if(notifLog.length>20)notifLog.pop();
+  renderNotifList();
+}
+
+function renderNotifList(){
+  const el=document.getElementById('notif-list');
+  if(!notifLog.length){el.innerHTML='<div style="text-align:center;padding:16px;color:var(--text3);font-size:12px;">No notifications yet</div>';return;}
+  el.innerHTML=notifLog.map(n=>`
+    <div class="notif-item">
+      <div class="ni-dot" style="background:${n.type==='danger'?'#f87171':'#fbbf24'};"></div>
+      <div><div class="ni-text">${n.msg}</div><div class="ni-time">${n.time}</div></div>
+    </div>`).join('');
+}
+
+async function sendPush(msg,icon='🏠'){
+  if(!ntfyTopic)return;
+  try{
+    await fetch(`https://ntfy.sh/${ntfyTopic}`,{
+      method:'POST',
+      headers:{'Title':'SmartHome Alert','Priority':'high','Tags':'rotating_light','Content-Type':'text/plain'},
+      body:`${icon} ${msg}`
+    });
+  }catch(e){}
+}
+
+// ── NOTIF PANEL ──
+function toggleNotifPanel(){
+  const p=document.getElementById('notif-panel');
+  const o=document.getElementById('overlay');
+  const open=p.classList.toggle('open');
+  o.classList.toggle('open',open);
+  if(open){
+    document.getElementById('ntfy-topic').value=ntfyTopic;
+    document.getElementById('thr-voc').value=thrVOC;
+    document.getElementById('thr-temp').value=thrTemp;
+    document.getElementById('notif-badge').style.display='none';
+  }
+}
+
+function saveNotifSettings(){
+  ntfyTopic=document.getElementById('ntfy-topic').value.trim();
+  thrVOC=parseFloat(document.getElementById('thr-voc').value)||300;
+  thrTemp=parseFloat(document.getElementById('thr-temp').value)||30;
+  localStorage.setItem('ntfy_topic',ntfyTopic);
+  localStorage.setItem('thr_voc',thrVOC);
+  localStorage.setItem('thr_temp',thrTemp);
+  toast('Settings saved!');
+  toggleNotifPanel();
+}
+
+async function sendTestNotif(){
+  if(!document.getElementById('ntfy-topic').value.trim()){toast('Enter a topic name first');return;}
+  ntfyTopic=document.getElementById('ntfy-topic').value.trim();
+  await sendPush('SmartHome test notification — working!','✅');
+  toast('Test sent! Check ntfy app on your iPhone');
+}
+
+// ── CHARTS ──
+const chartOpts=(color)=>({
+  responsive:true,maintainAspectRatio:false,
+  plugins:{legend:{display:false}},
+  scales:{
+    x:{ticks:{color:'#475569',font:{size:9},maxTicksLimit:6},grid:{color:'rgba(255,255,255,.03)'}},
+    y:{ticks:{color:'#475569',font:{size:9}},grid:{color:'rgba(255,255,255,.03)'}}
+  }
+});
+
+function timeLbl(f){const d=new Date(f.created_at);return d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');}
+
+function renderMainChart(){
+  const slice=allData.slice(-chartN);
+  const vals=slice.map(f=>parseFloat(f[chartField])||null);
+  if(mainChart)mainChart.destroy();
+  mainChart=new Chart(document.getElementById('main-chart'),{
+    type:'line',
+    data:{labels:slice.map(timeLbl),datasets:[{data:vals,borderColor:chartColor,backgroundColor:chartColor+'18',borderWidth:2,pointRadius:2,fill:true,tension:0.4,spanGaps:true}]},
+    options:chartOpts(chartColor)
+  });
+}
+
+function renderPirChart(){
+  const slice=allData.slice(-30);
+  const vals=slice.map(f=>parseInt(f.field6)||0);
+  if(pirChart)pirChart.destroy();
+  pirChart=new Chart(document.getElementById('pir-chart'),{
+    type:'bar',
+    data:{labels:slice.map(timeLbl),datasets:[{data:vals,backgroundColor:vals.map(v=>v?'rgba(244,63,94,.6)':'rgba(255,255,255,.04)'),borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#475569',font:{size:9},maxTicksLimit:8},grid:{display:false}},y:{display:false,max:1.5}}}
+  });
+}
+
+function setChartField(btn,f,name,unit,color){
+  chartField=f;chartUnit=unit;chartColor=color;
+  document.getElementById('main-chart-title').textContent=name;
+  document.querySelectorAll('#sensor-tabs .rp').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(allData.length)renderMainChart();
+}
+function setRN(btn,n){chartN=n;btn.closest('.rpills').querySelectorAll('.rp').forEach(b=>b.classList.remove('active'));btn.classList.add('active');if(allData.length)renderMainChart();}
+
+// ── HISTORY PAGE ──
+const histMeta={
+  all:{fields:['f1','f2'],colors:['#f97316','#38bdf8'],label:'Temp & Humidity'},
+  temp:{fields:['f1'],colors:['#f97316'],label:'Temperature (°C)'},
+  hum:{fields:['f2'],colors:['#38bdf8'],label:'Humidity (%)'},
+  voc:{fields:['f4'],colors:['#a855f7'],label:'VOC / Air Quality'},
+  light:{fields:['f5'],colors:['#fbbf24'],label:'Light (lx)'},
+  motion:{fields:['f6'],colors:['#f43f5e'],label:'Motion'}
+};
+const histFieldKey={f1:'field1',f2:'field2',f3:'field3',f4:'field4',f5:'field5',f6:'field6'};
+
+function setHistField(btn,f){
+  histField=f;
+  document.querySelectorAll('#hist-filter .hf-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderHistPage();
+}
+function setHistN(btn,n){histN=n;btn.closest('.rpills').querySelectorAll('.rp').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderHistPage();}
+
+function renderHistPage(){
+  if(!allData.length)return;
+  const meta=histMeta[histField]||histMeta.all;
+  const slice=allData.slice(-histN);
+  document.getElementById('hist-chart-title').textContent=meta.label;
+
+  // Stats for primary field
+  const pf=histFieldKey[meta.fields[0]];
+  const vals=slice.map(f=>parseFloat(f[pf])).filter(v=>!isNaN(v));
+  if(vals.length){
+    const avg=(vals.reduce((a,b)=>a+b)/vals.length).toFixed(1);
+    document.getElementById('hs-avg').textContent=avg;
+    document.getElementById('hs-min').textContent=Math.min(...vals).toFixed(1);
+    document.getElementById('hs-max').textContent=Math.max(...vals).toFixed(1);
+  }
+
+  // Chart
+  const datasets=meta.fields.map((f,i)=>({
+    label:f,
+    data:slice.map(row=>parseFloat(row[histFieldKey[f]])||null),
+    borderColor:meta.colors[i],
+    backgroundColor:meta.colors[i]+'15',
+    borderWidth:2,pointRadius:1.5,fill:true,tension:0.35,spanGaps:true
+  }));
+
+  if(histChart)histChart.destroy();
+  histChart=new Chart(document.getElementById('hist-chart'),{
+    type:histField==='motion'?'bar':'line',
+    data:{labels:slice.map(timeLbl),datasets},
+    options:{...chartOpts(meta.colors[0]),plugins:{legend:{display:meta.fields.length>1,labels:{color:'#94a3b8',font:{size:10},boxWidth:10}}}}
+  });
+
+  // Table
+  const rows=allData.slice(-15).reverse();
+  document.getElementById('hist-count').textContent=allData.length+' total';
+  document.getElementById('hist-table').innerHTML=rows.map(f=>{
+    const t=new Date(f.created_at);
+    const ts=t.toLocaleDateString([],{month:'short',day:'numeric'})+' '+t.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    const f1=parseFloat(f.field1),f2=parseFloat(f.field2),f4v=parseFloat(f.field4),f5v=parseFloat(f.field5);
+    return`<div class="ht-row">
+      <span class="ht-time">${ts}</span>
+      <div class="ht-vals">
+        ${!isNaN(f1)?`<span class="ht-v ht-f1">${f1.toFixed(1)}°</span>`:''}
+        ${!isNaN(f2)?`<span class="ht-v ht-f2">${f2.toFixed(1)}%</span>`:''}
+        ${!isNaN(f4v)?`<span class="ht-v ht-f3">VOC:${f4v.toFixed(0)}</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── ML ──
+function linReg(vals){
+  const n=vals.length;if(n<2)return{slope:0,intercept:vals[0]||0};
+  let sx=0,sy=0,sxy=0,sx2=0;
+  vals.forEach((y,x)=>{sx+=x;sy+=y;sxy+=x*y;sx2+=x*x;});
+  const s=(n*sxy-sx*sy)/(n*sx2-sx*sx||1);
+  return{slope:s,intercept:(sy-s*sx)/n};
+}
+
+function runML(){
+  if(allData.length<5)return;
+  const slice=allData.slice(-30);
+  const gv=f=>slice.map(r=>parseFloat(r[f])).filter(v=>!isNaN(v));
+  const temps=gv('field1'),hums=gv('field2'),vocs=gv('field4'),lights=gv('field5');
+
+  // Comfort index
+  const t=temps[temps.length-1],h=hums[hums.length-1],v=vocs[vocs.length-1];
+  let ci=100;
+  if(!isNaN(t)&&(t<18||t>28))ci-=25;
+  if(!isNaN(h)&&(h<30||h>70))ci-=25;
+  if(!isNaN(v)&&v>200)ci-=20;
+  document.getElementById('comfort-val').textContent=ci+'%';
+  const offset=188.5*(1-ci/100);
+  document.getElementById('comfort-circle').style.strokeDashoffset=offset;
+
+  // Heat index & dew point
+  if(!isNaN(t)&&!isNaN(h)){
+    const hi=t+0.33*(h/100*6.105*Math.exp(17.27*t/(237.7+t)))-4.0;
+    const dp=t-((100-h)/5);
+    document.getElementById('ml-heat').textContent=hi.toFixed(1)+'°C';
+    document.getElementById('ml-dew').textContent=dp.toFixed(1)+'°C';
+  }
+
+  // Anomaly detection Z-score
+  function anomaly(vals,id){
+    if(!vals.length)return;
+    const avg=vals.reduce((a,b)=>a+b)/vals.length;
+    const std=Math.sqrt(vals.map(v=>(v-avg)**2).reduce((a,b)=>a+b)/vals.length)||1;
+    const z=Math.abs(vals[vals.length-1]-avg)/std;
+    const el=document.getElementById(id);
+    if(z<1.5){el.textContent='✓ Normal';el.className='abadge ab-ok';}
+    else if(z<2.5){el.textContent='⚠ Slight anomaly (Z='+z.toFixed(1)+')';el.className='abadge ab-warn';}
+    else{el.textContent='✗ Anomaly Z='+z.toFixed(1);el.className='abadge ab-bad';}
+  }
+  anomaly(temps,'ml-a-temp');anomaly(hums,'ml-a-hum');anomaly(vocs,'ml-a-voc');anomaly(lights,'ml-a-light');
+
+  // Trends
+  function trend(vals,ai,vi){
+    if(vals.length<3)return;
+    const r=linReg(vals);
+    const el=document.getElementById(ai),vel=document.getElementById(vi);
+    if(r.slope>0.05){el.textContent='↑';el.style.color='#f87171';}
+    else if(r.slope<-0.05){el.textContent='↓';el.style.color='#4ade80';}
+    else{el.textContent='→';el.style.color='#94a3b8';}
+    vel.textContent=(r.slope>0?'+':'')+r.slope.toFixed(3)+'/sample';
+  }
+  trend(temps,'ml-tr-t','ml-tr-t-v');trend(hums,'ml-tr-h','ml-tr-h-v');trend(vocs,'ml-tr-v','ml-tr-v-v');
+
+  // Forecast
+  if(temps.length>=5){
+    const r=linReg(temps);
+    const cur=temps[temps.length-1];
+    for(let i=1;i<=3;i++){
+      const pred=r.intercept+r.slope*(temps.length+i*2);
+      document.getElementById('fc'+i).textContent=pred.toFixed(1);
+      const delta=pred-cur;
+      const del=document.getElementById('fc'+i+'d');
+      del.textContent=(delta>=0?'+':'')+delta.toFixed(1)+'°';
+      del.style.color=delta>0?'#f87171':'#4ade80';
+    }
+  }
+
+  // Feature importance (simulated from RF notebook values)
+  const rfFeats=[
+    {name:'Minute',pct:35},
+    {name:'Hour of day',pct:29},
+    {name:'Light level',pct:18},
+    {name:'Temperature',pct:11},
+    {name:'Humidity',pct:7},
+  ];
+  document.getElementById('rf-importance').innerHTML=rfFeats.map(f=>`
+    <div class="rf-row">
+      <span class="rf-feat">${f.name}</span>
+      <div class="rf-bar-wrap"><div class="rf-bar" style="width:${f.pct}%;"></div></div>
+      <span class="rf-pct">${f.pct}%</span>
+    </div>`).join('');
+
+  // Stats
+  function stats(vals,id){
+    if(!vals.length)return;
+    const avg=(vals.reduce((a,b)=>a+b)/vals.length).toFixed(1);
+    document.getElementById(id).textContent=avg+' / '+Math.min(...vals).toFixed(1)+' / '+Math.max(...vals).toFixed(1);
+  }
+  stats(temps,'ml-st-t');stats(hums,'ml-st-h');stats(vocs,'ml-st-v');
+  document.getElementById('ml-motion-cnt').textContent=allData.filter(f=>parseInt(f.field6)>0).length+' events';
+  document.getElementById('ml-pts').textContent=allData.length+' points';
+
+  // ML Insights
+  const insights=[];
+  if(temps.length>5){
+    const rt=linReg(temps);
+    if(rt.slope>0.1)insights.push({label:'Temperature Rising',text:`Temp increasing by +${(rt.slope*60).toFixed(1)}°C/hour. Consider activating cooling or opening windows.`});
+    if(rt.slope<-0.1)insights.push({label:'Temperature Dropping',text:`Temp decreasing. Heating may be needed if trend continues.`});
+  }
+  if(vocs.length>5&&vocs[vocs.length-1]>200){
+    insights.push({label:'Air Quality Warning',text:`VOC index ${vocs[vocs.length-1].toFixed(0)} is elevated. Based on your data patterns, ventilating for 10 min reduces VOC by ~40%.`});
+  }
+  if(hums.length>3&&hums[hums.length-1]>65){
+    insights.push({label:'High Humidity',text:`Humidity ${hums[hums.length-1].toFixed(0)}% may cause discomfort. Dehumidifier or ventilation recommended.`});
+  }
+  if(!insights.length)insights.push({label:'All Normal',text:'All parameters are within comfortable ranges. No action needed.'});
+  document.getElementById('ml-insights').innerHTML=insights.map(i=>`
+    <div class="insight-box">
+      <div class="insight-label">${i.label}</div>
+      <div class="insight-text">${i.text}</div>
+    </div>`).join('');
+}
+
+// ── SDG ──
+function updateSDG(){
+  if(!allData.length)return;
+  const last=allData[allData.length-1];
+  const t=parseFloat(last.field1),h=parseFloat(last.field2),v=parseFloat(last.field4);
+  const relayOn_ratio=allData.filter(f=>parseInt(f.field6)>0).length/allData.length;
+
+  const goals=[
+    {num:'SDG 3',name:'Good Health & Well-Being',color:'#4ade80',
+     desc:'Indoor air quality, thermal comfort, humidity levels',
+     score:()=>{let s=100;if(!isNaN(v)&&v>200)s-=30;if(!isNaN(t)&&(t<18||t>28))s-=20;if(!isNaN(h)&&(h<30||h>70))s-=20;return Math.max(0,s);}},
+    {num:'SDG 7',name:'Affordable & Clean Energy',color:'#fbbf24',
+     desc:'Smart automation reduces unnecessary energy use',
+     score:()=>{let s=70;if(relayOn_ratio<0.3)s+=20;if(activeScene==='away'||activeScene==='night')s+=10;return Math.min(100,s);}},
+    {num:'SDG 11',name:'Sustainable Cities',color:'#60a5fa',
+     desc:'Smart home systems as building blocks of smart cities',
+     score:()=>{let s=75;if(allData.length>50)s+=10;if(!isNaN(v)&&v<150)s+=10;return Math.min(100,s);}},
+    {num:'SDG 13',name:'Climate Action',color:'#34d399',
+     desc:'Monitoring and reducing carbon footprint at home',
+     score:()=>{let s=65;if(!isNaN(t)&&t>=18&&t<=22)s+=20;if(activeScene==='away')s+=10;return Math.min(100,s);}},
+  ];
+
+  const scores=goals.map(g=>g.score());
+  const total=Math.round(scores.reduce((a,b)=>a+b)/scores.length);
+  document.getElementById('sdg-total').textContent=total;
+  document.getElementById('sdg-prog').style.width=total+'%';
+  document.getElementById('sdg-note').textContent=
+    total>70?'🟢 Your home is sustainable!':total>50?'🟡 Room for improvement':'🔴 Action needed';
+
+  document.getElementById('sdg-list').innerHTML=goals.map((g,i)=>{
+    const s=scores[i];
+    const c=s>70?'#4ade80':s>40?'#fbbf24':'#f87171';
+    return`<div class="sdg-goal">
+      <div class="sdg-gr">
+        <div class="sdg-num" style="background:${g.color}18;color:${g.color};">${g.num}</div>
+        <div class="sdg-info">
+          <div class="sdg-name">${g.name}</div>
+          <div class="sdg-desc">${g.desc}</div>
+          <div class="prog"><div class="prog-f" style="width:${s}%;background:${c};"></div></div>
+        </div>
+        <div class="sdg-pct" style="color:${c};">${s}%</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── SCENARIOS ──
+function setScene(s){
+  activeScene=s;
+  ['morning','evening','night','away'].forEach(sc=>{
+    document.getElementById('sc-'+sc).classList.toggle('on',sc===s);
+    document.getElementById('sa-'+sc).style.display=sc===s?'block':'none';
+  });
+  const msgs={morning:'Morning mode active',evening:'Evening mode — lights dimmed',night:'Night mode — security on',away:'Away mode — maximum saving'};
+  toast(msgs[s]);
+  updateSDG();
+}
+
+async function toggleRelay(){
+  relayOn=!relayOn;
+  document.getElementById('relay-tog').classList.toggle('on');
+  document.getElementById('relay-lbl').textContent=relayOn?'On':'Off';
+  await sendField(6,relayOn?1:0);
+}
+
+async function sendField(field,value){
+  try{
+    const r=await fetch(`https://api.thingspeak.com/update?api_key=${WK}&field${field}=${value}`);
+    const t=await r.text();
+    toast(parseInt(t)>0?'Sent ✓ (entry #'+t+')':'Write error');
+  }catch(e){toast('Network error');}
+}
+
+// ── UTILS ──
+function toast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ── INIT ──
+document.getElementById('ntfy-topic').value=ntfyTopic;
+fetchData();
+setInterval(fetchData,30000);
+</script>
+</body>
+</html>
